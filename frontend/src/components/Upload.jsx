@@ -1,6 +1,8 @@
 import axios from "axios";
 import { useState } from "react";
 
+const BASE_URL = "https://ai-profile-generator-zrwt.onrender.com"; // 🔁 REPLACE THIS
+
 function Upload() {
   const [jobId, setJobId] = useState(null);
   const [fileName, setFileName] = useState("");
@@ -22,11 +24,12 @@ function Upload() {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/upload",
+        `${BASE_URL}/api/upload`,
         formData
       );
       setJobId(res.data.jobId);
     } catch (err) {
+      console.error(err);
       alert("Upload failed");
     }
   };
@@ -37,10 +40,12 @@ function Upload() {
 
     try {
       const res = await axios.post(
-        `http://localhost:5000/api/remove-bg/${jobId}`
+        `${BASE_URL}/api/remove-bg/${jobId}`
       );
-      setResultImage(`http://localhost:5000/${res.data.result}`);
-    } catch {
+
+      setResultImage(`${BASE_URL}/${res.data.result}`);
+    } catch (err) {
+      console.error(err);
       alert("Background removal failed");
     }
 
@@ -53,11 +58,13 @@ function Upload() {
 
     try {
       const res = await axios.post(
-        `http://localhost:5000/api/apply-style/${jobId}`,
+        `${BASE_URL}/api/apply-style/${jobId}`,
         { style }
       );
-      setResultImage(`http://localhost:5000/${res.data.result}`);
-    } catch {
+
+      setResultImage(`${BASE_URL}/${res.data.result}`);
+    } catch (err) {
+      console.error(err);
       alert("Style failed");
     }
 
@@ -84,14 +91,22 @@ function Upload() {
         {preview && (
           <div>
             <p className="text-sm text-center">Original</p>
-            <img src={preview} className="w-40 h-40 rounded border" />
+            <img
+              src={preview}
+              alt="preview"
+              className="w-40 h-40 rounded border object-cover"
+            />
           </div>
         )}
 
         {resultImage && (
           <div>
             <p className="text-sm text-center">Result</p>
-            <img src={resultImage} className="w-40 h-40 rounded border" />
+            <img
+              src={resultImage}
+              alt="result"
+              className="w-40 h-40 rounded border object-cover"
+            />
           </div>
         )}
       </div>
@@ -102,7 +117,7 @@ function Upload() {
           onClick={removeBackground}
           disabled={loading}
           className={`mt-5 w-full px-4 py-2 rounded text-white ${
-            loading ? "bg-gray-400" : "bg-blue-500"
+            loading ? "bg-gray-400" : "bg-blue-500 hover:bg-blue-600"
           }`}
         >
           {loading ? "Processing..." : "Remove Background"}
@@ -144,7 +159,7 @@ function Upload() {
         <a
           href={resultImage}
           download
-          className="mt-4 block text-center bg-green-500 text-white px-4 py-2 rounded"
+          className="mt-4 block text-center bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
         >
           Download Image
         </a>
