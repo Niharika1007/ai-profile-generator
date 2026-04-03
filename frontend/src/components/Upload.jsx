@@ -8,7 +8,7 @@ function Upload() {
   const [resultImage, setResultImage] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // 📤 Upload Image
+  // 📤 Upload
   const handleUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -25,15 +25,13 @@ function Upload() {
         "http://localhost:5000/api/upload",
         formData
       );
-
       setJobId(res.data.jobId);
     } catch (err) {
-      console.error(err);
       alert("Upload failed");
     }
   };
 
-  // 🎯 Remove Background
+  // 🎯 Remove BG
   const removeBackground = async () => {
     setLoading(true);
 
@@ -41,76 +39,112 @@ function Upload() {
       const res = await axios.post(
         `http://localhost:5000/api/remove-bg/${jobId}`
       );
-
       setResultImage(`http://localhost:5000/${res.data.result}`);
-    } catch (err) {
-      console.error(err);
+    } catch {
       alert("Background removal failed");
     }
 
     setLoading(false);
   };
 
+  // 🎨 Style
+  const applyStyle = async (style) => {
+    setLoading(true);
+
+    try {
+      const res = await axios.post(
+        `http://localhost:5000/api/apply-style/${jobId}`,
+        { style }
+      );
+      setResultImage(`http://localhost:5000/${res.data.result}`);
+    } catch {
+      alert("Style failed");
+    }
+
+    setLoading(false);
+  };
+
   return (
-    <div className="mt-10 p-6 border rounded-lg shadow-md w-[420px] bg-white">
+    <div className="mt-10 p-6 border rounded-lg shadow-md w-[450px] bg-white">
       <h2 className="text-lg font-semibold mb-4 text-center">
-        Upload Your Image
+        AI Profile Generator
       </h2>
 
-      {/* 📁 File Input */}
+      {/* Upload */}
       <input type="file" onChange={handleUpload} />
 
-      {/* 📄 File Name */}
       {fileName && (
         <p className="mt-2 text-sm text-gray-600 text-center">
-          Selected: {fileName}
+          {fileName}
         </p>
       )}
 
-      {/* 🖼️ Images Preview */}
+      {/* Images */}
       <div className="flex gap-4 mt-4 justify-center">
         {preview && (
           <div>
-            <p className="text-sm mb-2 text-center">Original</p>
-            <img
-              src={preview}
-              alt="preview"
-              className="w-40 h-40 object-cover rounded border"
-            />
+            <p className="text-sm text-center">Original</p>
+            <img src={preview} className="w-40 h-40 rounded border" />
           </div>
         )}
 
         {resultImage && (
           <div>
-            <p className="text-sm mb-2 text-center">Result</p>
-            <img
-              src={resultImage}
-              alt="result"
-              className="w-40 h-40 object-cover rounded border"
-            />
+            <p className="text-sm text-center">Result</p>
+            <img src={resultImage} className="w-40 h-40 rounded border" />
           </div>
         )}
       </div>
 
-      {/* 🎯 Button */}
+      {/* Remove BG */}
       {jobId && (
         <button
           onClick={removeBackground}
           disabled={loading}
           className={`mt-5 w-full px-4 py-2 rounded text-white ${
-            loading ? "bg-gray-400" : "bg-blue-500 hover:bg-blue-600"
+            loading ? "bg-gray-400" : "bg-blue-500"
           }`}
         >
           {loading ? "Processing..." : "Remove Background"}
         </button>
       )}
 
-      {/* 📥 Download */}
+      {/* Styles */}
+      {jobId && (
+        <div className="mt-4">
+          <p className="text-sm mb-2 text-center">Apply Style</p>
+
+          <div className="flex gap-2 justify-center flex-wrap">
+            <button
+              onClick={() => applyStyle("professional")}
+              className="bg-purple-500 text-white px-3 py-1 rounded"
+            >
+              Professional
+            </button>
+
+            <button
+              onClick={() => applyStyle("artistic")}
+              className="bg-pink-500 text-white px-3 py-1 rounded"
+            >
+              Artistic
+            </button>
+
+            <button
+              onClick={() => applyStyle("fantasy")}
+              className="bg-yellow-500 text-white px-3 py-1 rounded"
+            >
+              Fantasy
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Download */}
       {resultImage && (
         <a
           href={resultImage}
           download
-          className="mt-3 block text-center bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+          className="mt-4 block text-center bg-green-500 text-white px-4 py-2 rounded"
         >
           Download Image
         </a>

@@ -10,69 +10,74 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 📁 Create temp folder if not exists
+// Folder
 const uploadDir = path.join(__dirname, "temp");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
-// 📁 Serve images
+// Static
 app.use(express.static(uploadDir));
 
-// 📤 Multer storage config
+// Multer
 const storage = multer.diskStorage({
   destination: uploadDir,
   filename: (req, file, cb) => {
-    const uniqueName = uuidv4() + path.extname(file.originalname);
-    cb(null, uniqueName);
+    const name = uuidv4() + path.extname(file.originalname);
+    cb(null, name);
   },
 });
-
 const upload = multer({ storage });
 
-// 🧠 In-memory job store
-let jobs = {};
-
-// 🏠 Test route
-app.get("/", (req, res) => {
-  res.send("Backend running");
-});
-
-// 📤 Upload API
+// Upload API
 app.post("/api/upload", upload.single("image"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).send("No file uploaded");
-  }
-
-  jobs[req.file.filename] = { status: "uploaded" };
-
-  res.json({
-    jobId: req.file.filename,
-  });
+  res.json({ jobId: req.file.filename });
 });
 
-// 🎯 Background removal API (FIXED VERSION)
+// Remove BG
 app.post("/api/remove-bg/:jobId", (req, res) => {
   const jobId = req.params.jobId;
 
   const inputPath = path.join(uploadDir, jobId);
-
   const cleanName = jobId.replace(/\.[^/.]+$/, "");
   const outputName = `bg_removed_${cleanName}.png`;
-
   const outputPath = path.join(uploadDir, outputName);
 
   const command = `rembg i "${inputPath}" "${outputPath}"`;
 
-  console.log("Running command:", command);
-
   exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error("ERROR:", stderr);
-      return res.status(500).send(stderr);
+    if (error) return res.status(500).send(stderr);
+
+    res.json({ result: outputName });
+  });
+});
+
+// Style (Simulation)
+app.post("/api/apply-style/:jobId", (req, res) => {
+  const jobId = req.params.jobId;
+  const style = req.body.style;
+
+  console.log("STYLE:", style); // debug
+
+  const inputPath = path.join(uploadDir, jobId);
+
+  const cleanName = jobId.replace(/\.[^/.]+$/, "");
+  const outputName = `${style}_${cleanName}.png`;
+  const outputPath = path.join(uploadDir, outputName);
+
+  console.log("Input:", inputPath);
+  console.log("Output:", outputPath);
+
+  // check file exists
+  if (!fs.existsSync(inputPath)) {
+    return res.status(400).send("Input file not found");
+  }
+
+  fs.copyFile(inputPath, outputPath, (err) => {
+    if (err) {
+      console.error("COPY ERROR:", err);
+      return res.status(500).send("Copy failed");
     }
 
-    console.log("SUCCESS");
+    console.log("STYLE SUCCESS");
 
     res.json({
       result: outputName,
@@ -80,7 +85,7 @@ app.post("/api/remove-bg/:jobId", (req, res) => {
   });
 });
 
-// 🚀 Start server
-app.listen(5000, () => {
-  console.log("Server running on http://localhost:5000");
-});
+
+app.listen(5000, () =>
+  console.log("Server running on http://localhost:5000")
+);
