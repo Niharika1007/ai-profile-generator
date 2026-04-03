@@ -1,167 +1,92 @@
 import axios from "axios";
 import { useState } from "react";
 
-const BASE_URL = "https://ai-profile-generator-zrwt.onrender.com"; // 🔁 REPLACE THIS
+const BASE_URL = "https://ai-profile-generator-zrwt.onrender.com";
 
 function Upload() {
   const [jobId, setJobId] = useState(null);
-  const [fileName, setFileName] = useState("");
   const [preview, setPreview] = useState(null);
   const [resultImage, setResultImage] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // 📤 Upload
   const handleUpload = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-
-    setFileName(file.name);
     setPreview(URL.createObjectURL(file));
-    setResultImage(null);
 
     const formData = new FormData();
     formData.append("image", file);
 
-    try {
-      const res = await axios.post(
-        `${BASE_URL}/api/upload`,
-        formData
-      );
-      setJobId(res.data.jobId);
-    } catch (err) {
-      console.error(err);
-      alert("Upload failed");
-    }
+    const res = await axios.post(`${BASE_URL}/api/upload`, formData);
+    setJobId(res.data.jobId);
   };
 
-  // 🎯 Remove BG
-  const removeBackground = async () => {
+  const callAPI = async (url, data = null, isForm = false) => {
     setLoading(true);
-
     try {
-      const res = await axios.post(
-        `${BASE_URL}/api/remove-bg/${jobId}`
-      );
-
+      const res = isForm
+        ? await axios.post(url, data)
+        : await axios.post(url, data || {});
       setResultImage(`${BASE_URL}/${res.data.result}`);
-    } catch (err) {
-      console.error(err);
-      alert("Background removal failed");
+    } catch {
+      alert("Operation failed");
     }
-
-    setLoading(false);
-  };
-
-  // 🎨 Style
-  const applyStyle = async (style) => {
-    setLoading(true);
-
-    try {
-      const res = await axios.post(
-        `${BASE_URL}/api/apply-style/${jobId}`,
-        { style }
-      );
-
-      setResultImage(`${BASE_URL}/${res.data.result}`);
-    } catch (err) {
-      console.error(err);
-      alert("Style failed");
-    }
-
     setLoading(false);
   };
 
   return (
-    <div className="mt-10 p-6 border rounded-lg shadow-md w-[450px] bg-white">
-      <h2 className="text-lg font-semibold mb-4 text-center">
-        AI Profile Generator
-      </h2>
-
-      {/* Upload */}
+    <div className="p-6 bg-white shadow rounded w-[450px]">
       <input type="file" onChange={handleUpload} />
 
-      {fileName && (
-        <p className="mt-2 text-sm text-gray-600 text-center">
-          {fileName}
-        </p>
-      )}
-
-      {/* Images */}
-      <div className="flex gap-4 mt-4 justify-center">
-        {preview && (
-          <div>
-            <p className="text-sm text-center">Original</p>
-            <img
-              src={preview}
-              alt="preview"
-              className="w-40 h-40 rounded border object-cover"
-            />
-          </div>
-        )}
-
-        {resultImage && (
-          <div>
-            <p className="text-sm text-center">Result</p>
-            <img
-              src={resultImage}
-              alt="result"
-              className="w-40 h-40 rounded border object-cover"
-            />
-          </div>
-        )}
+      <div className="flex gap-4 mt-4">
+        {preview && <img src={preview} className="w-40" />}
+        {resultImage && <img src={resultImage} className="w-40" />}
       </div>
 
-      {/* Remove BG */}
       {jobId && (
-        <button
-          onClick={removeBackground}
-          disabled={loading}
-          className={`mt-5 w-full px-4 py-2 rounded text-white ${
-            loading ? "bg-gray-400" : "bg-blue-500 hover:bg-blue-600"
-          }`}
-        >
-          {loading ? "Processing..." : "Remove Background"}
-        </button>
+        <>
+          <button onClick={() => callAPI(`${BASE_URL}/api/remove-bg/${jobId}`)}>
+            Remove BG
+          </button>
+
+          <button onClick={() => callAPI(`${BASE_URL}/api/enhance/${jobId}`)}>
+            Enhance
+          </button>
+
+          <button
+            onClick={() =>
+              callAPI(`${BASE_URL}/api/apply-style/${jobId}`, {
+                style: "professional",
+              })
+            }
+          >
+            Professional
+          </button>
+
+          <input
+            type="color"
+            onChange={(e) =>
+              callAPI(`${BASE_URL}/api/bg-color/${jobId}`, {
+                color: e.target.value,
+              })
+            }
+          />
+
+          <input
+            type="file"
+            onChange={(e) => {
+              const fd = new FormData();
+              fd.append("bg", e.target.files[0]);
+              callAPI(`${BASE_URL}/api/bg-image/${jobId}`, fd, true);
+            }}
+          />
+        </>
       )}
 
-      {/* Styles */}
-      {jobId && (
-        <div className="mt-4">
-          <p className="text-sm mb-2 text-center">Apply Style</p>
+      {loading && <p>Processing...</p>}
 
-          <div className="flex gap-2 justify-center flex-wrap">
-            <button
-              onClick={() => applyStyle("professional")}
-              className="bg-purple-500 text-white px-3 py-1 rounded"
-            >
-              Professional
-            </button>
-
-            <button
-              onClick={() => applyStyle("artistic")}
-              className="bg-pink-500 text-white px-3 py-1 rounded"
-            >
-              Artistic
-            </button>
-
-            <button
-              onClick={() => applyStyle("fantasy")}
-              className="bg-yellow-500 text-white px-3 py-1 rounded"
-            >
-              Fantasy
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Download */}
       {resultImage && (
-        <a
-          href={resultImage}
-          download
-          className="mt-4 block text-center bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-        >
-          Download Image
+        <a href={resultImage} download>
+          Download
         </a>
       )}
     </div>
